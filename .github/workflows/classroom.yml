@@ -20,8 +20,8 @@ jobs:
         Перевір коректність виконання завдання: чи відповідає код умові, чи немає логічних помилок, чи працює програма для різних вхідних даних.
         Перевір оформлення коду.
         Склади звіт у двох розділах:
-        Коректність коду — перерахуй знайдені помилки або вкажи, що код працює правильно.
-        Стиль коду — перерахуй порушення стилю, запропонуй поліпшення.
+        Коректність коду - перерахуй знайдені помилки або вкажи, що код працює правильно.
+        Стиль коду - перерахуй порушення стилю, запропонуй поліпшення.
         Не треба писати нічого крім відповіді. Не треба нічого пропонувати.
         Оцінити роботу загалом за 100 бальною оцінкою.
 
@@ -34,35 +34,33 @@ jobs:
           java-version: '17'
           cache: maven
 
-      # ================= MAVEN BUILD =================
+      # 1) Compilation
       - name: Compile (skip tests)
         run: mvn -B -ntp -DskipTests=true clean package
-        working-directory: app
 
+      # 2) Unit tests
       - name: Run Unit Tests
         run: mvn -B -ntp test
-        working-directory: app
 
+      # 3) Checkstyle
       - name: Run Checkstyle
         run: mvn -B -ntp checkstyle:checkstyle || true
-        working-directory: app
 
+      # 4) PMD
       - name: Run PMD
         run: mvn -B -ntp pmd:check || true
-        working-directory: app
 
+      # 5) SpotBugs
       - name: Run SpotBugs
         run: mvn -B -ntp com.github.spotbugs:spotbugs-maven-plugin:check || true
-        working-directory: app
 
+      # 6) Spotless (soft check)
       - name: Verify Code Formatting (Spotless, soft)
         run: mvn -B -ntp spotless:check || echo "⚠️ Spotless found formatting issues (ignored)"
-        working-directory: app
 
-      # ================= COLLECT FILES =================
+      # ==== ChatGPT: review all files in package ua.opnu ====
       - name: Collect ua.opnu Java files
         id: target
-        working-directory: app
         run: |
           git ls-files | grep -E 'src/.*/ua/opnu/.*\.java$' > java_files_for_review.txt || true
           COUNT=$(wc -l < java_files_for_review.txt | xargs)
@@ -73,10 +71,8 @@ jobs:
             echo "has_files=false" >> $GITHUB_OUTPUT
           fi
 
-      # ================= CHATGPT REVIEW =================
       - name: ChatGPT code review (ua.opnu package, Markdown output)
         if: ${{ steps.target.outputs.has_files == 'true' }}
-        working-directory: app
         run: |
           set -e
           mkdir -p chatgpt
@@ -129,22 +125,21 @@ jobs:
 
       - name: Ensure ChatGPT report exists
         if: always()
-        working-directory: app
         run: |
           if [ ! -f chatgpt/chatgpt_report.md ]; then
             mkdir -p chatgpt
             echo "# ChatGPT Review Report\n\n_Not generated._" > chatgpt/chatgpt_report.md
           fi
 
-      # ================= ARTIFACTS =================
+      # 7) Archive all reports
       - name: Archive Reports
         uses: actions/upload-artifact@v4
         with:
           name: reports
           path: |
-            app/chatgpt/chatgpt_report.md
-            app/target/checkstyle-result.xml
-            app/target/site/checkstyle.html
-            app/target/site/pmd.html
-            app/target/spotbugsXml.xml
+            chatgpt/chatgpt_report.md
+            target/checkstyle-result.xml
+            target/site/checkstyle.html
+            target/site/pmd.html
+            target/spotbugsXml.xml
           if-no-files-found: warn
