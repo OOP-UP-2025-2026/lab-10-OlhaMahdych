@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: lab-10-OlhaMahdych   # <-- путь к папке с pom.xml
+        working-directory: lab-10-OlhaMahdych/lab-10-OlhaMahdych  # <-- путь к папке с pom.xml
 
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -38,31 +38,24 @@ jobs:
           java-version: '17'
           cache: maven
 
-      # 1) Compilation
       - name: Compile (skip tests)
         run: mvn -B -ntp -DskipTests=true clean package
 
-      # 2) Unit tests
       - name: Run Unit Tests
         run: mvn -B -ntp test
 
-      # 3) Checkstyle
       - name: Run Checkstyle
         run: mvn -B -ntp checkstyle:checkstyle || true
 
-      # 4) PMD
       - name: Run PMD
         run: mvn -B -ntp pmd:check || true
 
-      # 5) SpotBugs
       - name: Run SpotBugs
         run: mvn -B -ntp com.github.spotbugs:spotbugs-maven-plugin:check || true
 
-      # 6) Spotless (soft check)
       - name: Verify Code Formatting (Spotless, soft)
         run: mvn -B -ntp spotless:check || echo "⚠️ Spotless found formatting issues (ignored)"
 
-      # ==== ChatGPT: review all files in package ua.opnu ====
       - name: Collect ua.opnu Java files
         id: target
         run: |
@@ -135,7 +128,6 @@ jobs:
             echo "# ChatGPT Review Report\n\n_Not generated._" > chatgpt/chatgpt_report.md
           fi
 
-      # 7) Archive all reports
       - name: Archive Reports
         uses: actions/upload-artifact@v4
         with:
