@@ -34,7 +34,7 @@ jobs:
           java-version: '17'
           cache: maven
 
-      # ====== IMPORTANT FIX: RUN MAVEN IN THE "app" FOLDER ======
+      # ================= MAVEN BUILD =================
       - name: Compile (skip tests)
         run: mvn -B -ntp -DskipTests=true clean package
         working-directory: app
@@ -59,11 +59,12 @@ jobs:
         run: mvn -B -ntp spotless:check || echo "⚠️ Spotless found formatting issues (ignored)"
         working-directory: app
 
-      # ===== Collect Java Files =====
+      # ================= COLLECT FILES =================
       - name: Collect ua.opnu Java files
         id: target
+        working-directory: app
         run: |
-          git ls-files | grep -E 'app/src/.*/ua/opnu/.*\.java$' > java_files_for_review.txt || true
+          git ls-files | grep -E 'src/.*/ua/opnu/.*\.java$' > java_files_for_review.txt || true
           COUNT=$(wc -l < java_files_for_review.txt | xargs)
           echo "count=$COUNT" >> $GITHUB_OUTPUT
           if [ "$COUNT" -gt 0 ]; then
@@ -72,9 +73,10 @@ jobs:
             echo "has_files=false" >> $GITHUB_OUTPUT
           fi
 
-      # ===== ChatGPT Review =====
+      # ================= CHATGPT REVIEW =================
       - name: ChatGPT code review (ua.opnu package, Markdown output)
         if: ${{ steps.target.outputs.has_files == 'true' }}
+        working-directory: app
         run: |
           set -e
           mkdir -p chatgpt
@@ -127,19 +129,20 @@ jobs:
 
       - name: Ensure ChatGPT report exists
         if: always()
+        working-directory: app
         run: |
           if [ ! -f chatgpt/chatgpt_report.md ]; then
             mkdir -p chatgpt
             echo "# ChatGPT Review Report\n\n_Not generated._" > chatgpt/chatgpt_report.md
           fi
 
-      # ===== Archive Reports =====
+      # ================= ARTIFACTS =================
       - name: Archive Reports
         uses: actions/upload-artifact@v4
         with:
           name: reports
           path: |
-            chatgpt/chatgpt_report.md
+            app/chatgpt/chatgpt_report.md
             app/target/checkstyle-result.xml
             app/target/site/checkstyle.html
             app/target/site/pmd.html
