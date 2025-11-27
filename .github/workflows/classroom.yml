@@ -20,8 +20,8 @@ jobs:
         Перевір коректність виконання завдання: чи відповідає код умові, чи немає логічних помилок, чи працює програма для різних вхідних даних.
         Перевір оформлення коду.
         Склади звіт у двох розділах:
-        Коректність коду - перерахуй знайдені помилки або вкажи, що код працює правильно.
-        Стиль коду - перерахуй порушення стилю, запропонуй поліпшення.
+        Коректність коду — перерахуй знайдені помилки або вкажи, що код працює правильно.
+        Стиль коду — перерахуй порушення стилю, запропонуй поліпшення.
         Не треба писати нічого крім відповіді. Не треба нічого пропонувати.
         Оцінити роботу загалом за 100 бальною оцінкою.
 
@@ -34,36 +34,36 @@ jobs:
           java-version: '17'
           cache: maven
 
-      # ==== IMPORTANT FIX: explicitly run Maven in repository root ====
+      # ====== IMPORTANT FIX: RUN MAVEN IN THE "app" FOLDER ======
       - name: Compile (skip tests)
-        working-directory: ./
         run: mvn -B -ntp -DskipTests=true clean package
+        working-directory: app
 
       - name: Run Unit Tests
-        working-directory: ./
         run: mvn -B -ntp test
+        working-directory: app
 
       - name: Run Checkstyle
-        working-directory: ./
         run: mvn -B -ntp checkstyle:checkstyle || true
+        working-directory: app
 
       - name: Run PMD
-        working-directory: ./
         run: mvn -B -ntp pmd:check || true
+        working-directory: app
 
       - name: Run SpotBugs
-        working-directory: ./
         run: mvn -B -ntp com.github.spotbugs:spotbugs-maven-plugin:check || true
+        working-directory: app
 
       - name: Verify Code Formatting (Spotless, soft)
-        working-directory: ./
         run: mvn -B -ntp spotless:check || echo "⚠️ Spotless found formatting issues (ignored)"
+        working-directory: app
 
-      # ==== ChatGPT review ====
+      # ===== Collect Java Files =====
       - name: Collect ua.opnu Java files
         id: target
         run: |
-          git ls-files | grep -E 'src/.*/ua/opnu/.*\.java$' > java_files_for_review.txt || true
+          git ls-files | grep -E 'app/src/.*/ua/opnu/.*\.java$' > java_files_for_review.txt || true
           COUNT=$(wc -l < java_files_for_review.txt | xargs)
           echo "count=$COUNT" >> $GITHUB_OUTPUT
           if [ "$COUNT" -gt 0 ]; then
@@ -72,7 +72,8 @@ jobs:
             echo "has_files=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: ChatGPT code review (ua.opnu package)
+      # ===== ChatGPT Review =====
+      - name: ChatGPT code review (ua.opnu package, Markdown output)
         if: ${{ steps.target.outputs.has_files == 'true' }}
         run: |
           set -e
@@ -92,8 +93,8 @@ jobs:
           files = [p.strip() for p in open("java_files_for_review.txt","r").read().splitlines() if p.strip()]
           text = ""
           for fp in files:
-              content = open(fp,"r",encoding="utf-8",errors="ignore").read()
-              text += f"\n\n### FILE: {fp}\n```java\n{content}\n```"
+              with open(fp,"r",encoding="utf-8",errors="ignore") as f:
+                  text += f"\n\n### FILE: {fp}\n```java\n{f.read()}\n```"
 
           headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
           body = {
@@ -103,21 +104,25 @@ jobs:
               "text": {"format": {"type":"text"}}
           }
           r = requests.post("https://api.openai.com/v1/responses", headers=headers, data=json.dumps(body))
-          out = ""
           if r.status_code == 200:
               data = r.json()
-              out = data.get("output_text") or ""
+              out = data.get("output_text")
               if not out:
+                  parts = []
                   for item in data.get("output", []):
                       for c in item.get("content", []):
                           if "text" in c:
-                              out += c["text"]
+                              parts.append(c["text"])
+                  out = "\n".join(parts)
+              if not out:
+                  out = "_(No textual content parsed from response)_"
+              pathlib.Path("chatgpt/chatgpt_report.md").write_text(out, encoding="utf-8")
           else:
-              out = f"API error {r.status_code}:\n{r.text[:500]}"
-
-          pathlib.Path("chatgpt/chatgpt_report.md").write_text(out, encoding="utf-8")
+              pathlib.Path("chatgpt/chatgpt_report.md").write_text(
+                  f"API error {r.status_code}: {r.text[:500]}",
+                  encoding="utf-8"
+              )
           PY
-
           python3 gpt_review.py
 
       - name: Ensure ChatGPT report exists
@@ -128,14 +133,15 @@ jobs:
             echo "# ChatGPT Review Report\n\n_Not generated._" > chatgpt/chatgpt_report.md
           fi
 
+      # ===== Archive Reports =====
       - name: Archive Reports
         uses: actions/upload-artifact@v4
         with:
           name: reports
           path: |
             chatgpt/chatgpt_report.md
-            target/checkstyle-result.xml
-            target/site/checkstyle.html
-            target/site/pmd.html
-            target/spotbugsXml.xml
+            app/target/checkstyle-result.xml
+            app/target/site/checkstyle.html
+            app/target/site/pmd.html
+            app/target/spotbugsXml.xml
           if-no-files-found: warn
