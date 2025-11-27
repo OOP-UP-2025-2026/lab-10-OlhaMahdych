@@ -12,6 +12,9 @@ jobs:
   build:
     name: Compile + Tests + Static Analysis + ChatGPT
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lab-10-OlhaMahdych/lab-10-OlhaMahdych  # <-- путь к папке с pom.xml
 
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -25,7 +28,6 @@ jobs:
         Стиль коду - перерахуй порушення стилю, запропонуй поліпшення.
         Не треба писати нічого крім відповіді. Не треба нічого пропонувати.
         Оцінити роботу загалом за 100 бальною оцінкою.
-
     steps:
       - uses: actions/checkout@v4
 
@@ -35,24 +37,23 @@ jobs:
           java-version: '17'
           cache: maven
 
-      # ✅ Використовуємо правильний шлях до pom.xml
       - name: Compile (skip tests)
-        run: mvn -B -ntp -DskipTests=true clean package -f app/pom.xml
+        run: mvn -B -ntp -DskipTests=true clean package
 
       - name: Run Unit Tests
-        run: mvn -B -ntp test -f app/pom.xml
+        run: mvn -B -ntp test
 
       - name: Run Checkstyle
-        run: mvn -B -ntp checkstyle:checkstyle -f app/pom.xml || true
+        run: mvn -B -ntp checkstyle:checkstyle || true
 
       - name: Run PMD
-        run: mvn -B -ntp pmd:check -f app/pom.xml || true
+        run: mvn -B -ntp pmd:check || true
 
       - name: Run SpotBugs
-        run: mvn -B -ntp com.github.spotbugs:spotbugs-maven-plugin:check -f app/pom.xml || true
+        run: mvn -B -ntp com.github.spotbugs:spotbugs-maven-plugin:check || true
 
       - name: Verify Code Formatting (Spotless, soft)
-        run: mvn -B -ntp spotless:check -f app/pom.xml || echo "⚠️ Spotless found formatting issues (ignored)"
+        run: mvn -B -ntp spotless:check || echo "⚠️ Spotless found formatting issues (ignored)"
 
       - name: Collect ua.opnu Java files
         id: target
@@ -65,7 +66,6 @@ jobs:
           else
             echo "has_files=false" >> $GITHUB_OUTPUT
           fi
-
       - name: ChatGPT code review (ua.opnu package, Markdown output)
         if: ${{ steps.target.outputs.has_files == 'true' }}
         run: |
@@ -114,22 +114,21 @@ jobs:
               )
           PY
           python3 gpt_review.py
-
       - name: Ensure ChatGPT report exists
         if: always()
         run: |
           if [ ! -f chatgpt/chatgpt_report.md ]; then
             mkdir -p chatgpt
             echo "# ChatGPT Review Report\n\n_Not generated._" > chatgpt/chatgpt_report.md
-
+          fi
       - name: Archive Reports
         uses: actions/upload-artifact@v4
         with:
           name: reports
           path: |
             chatgpt/chatgpt_report.md
-            app/target/checkstyle-result.xml
-            app/target/site/checkstyle.html
-            app/target/site/pmd.html
-            app/target/spotbugsXml.xml
+            target/checkstyle-result.xml
+            target/site/checkstyle.html
+            target/site/pmd.html
+            target/spotbugsXml.xml
           if-no-files-found: warn
