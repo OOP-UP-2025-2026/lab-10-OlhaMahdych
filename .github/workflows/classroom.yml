@@ -1,3 +1,4 @@
+
 name: Checking lab work
 
 on: [push]
@@ -11,6 +12,9 @@ jobs:
   build:
     name: Compile + Tests + Static Analysis + ChatGPT
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lab-10-OlhaMahdych   # <-- путь к папке с pom.xml
 
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
