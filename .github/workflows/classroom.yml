@@ -34,31 +34,32 @@ jobs:
           java-version: '17'
           cache: maven
 
-      # 1) Compilation
+      # ==== IMPORTANT FIX: explicitly run Maven in repository root ====
       - name: Compile (skip tests)
+        working-directory: ./
         run: mvn -B -ntp -DskipTests=true clean package
 
-      # 2) Unit tests
       - name: Run Unit Tests
+        working-directory: ./
         run: mvn -B -ntp test
 
-      # 3) Checkstyle
       - name: Run Checkstyle
+        working-directory: ./
         run: mvn -B -ntp checkstyle:checkstyle || true
 
-      # 4) PMD
       - name: Run PMD
+        working-directory: ./
         run: mvn -B -ntp pmd:check || true
 
-      # 5) SpotBugs
       - name: Run SpotBugs
+        working-directory: ./
         run: mvn -B -ntp com.github.spotbugs:spotbugs-maven-plugin:check || true
 
-      # 6) Spotless (soft check)
       - name: Verify Code Formatting (Spotless, soft)
+        working-directory: ./
         run: mvn -B -ntp spotless:check || echo "⚠️ Spotless found formatting issues (ignored)"
 
-      # ==== ChatGPT: review all files in package ua.opnu ====
+      # ==== ChatGPT review ====
       - name: Collect ua.opnu Java files
         id: target
         run: |
@@ -71,7 +72,7 @@ jobs:
             echo "has_files=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: ChatGPT code review (ua.opnu package, Markdown output)
+      - name: ChatGPT code review (ua.opnu package)
         if: ${{ steps.target.outputs.has_files == 'true' }}
         run: |
           set -e
@@ -91,8 +92,8 @@ jobs:
           files = [p.strip() for p in open("java_files_for_review.txt","r").read().splitlines() if p.strip()]
           text = ""
           for fp in files:
-              with open(fp,"r",encoding="utf-8",errors="ignore") as f:
-                  text += f"\n\n### FILE: {fp}\n```java\n{f.read()}\n```"
+              content = open(fp,"r",encoding="utf-8",errors="ignore").read()
+              text += f"\n\n### FILE: {fp}\n```java\n{content}\n```"
 
           headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
           body = {
@@ -102,25 +103,21 @@ jobs:
               "text": {"format": {"type":"text"}}
           }
           r = requests.post("https://api.openai.com/v1/responses", headers=headers, data=json.dumps(body))
+          out = ""
           if r.status_code == 200:
               data = r.json()
-              out = data.get("output_text")
+              out = data.get("output_text") or ""
               if not out:
-                  parts = []
                   for item in data.get("output", []):
                       for c in item.get("content", []):
                           if "text" in c:
-                              parts.append(c["text"])
-                  out = "\n".join(parts)
-              if not out:
-                  out = "_(No textual content parsed from response)_"
-              pathlib.Path("chatgpt/chatgpt_report.md").write_text(out, encoding="utf-8")
+                              out += c["text"]
           else:
-              pathlib.Path("chatgpt/chatgpt_report.md").write_text(
-                  f"API error {r.status_code}: {r.text[:500]}",
-                  encoding="utf-8"
-              )
+              out = f"API error {r.status_code}:\n{r.text[:500]}"
+
+          pathlib.Path("chatgpt/chatgpt_report.md").write_text(out, encoding="utf-8")
           PY
+
           python3 gpt_review.py
 
       - name: Ensure ChatGPT report exists
@@ -131,7 +128,6 @@ jobs:
             echo "# ChatGPT Review Report\n\n_Not generated._" > chatgpt/chatgpt_report.md
           fi
 
-      # 7) Archive all reports
       - name: Archive Reports
         uses: actions/upload-artifact@v4
         with:
