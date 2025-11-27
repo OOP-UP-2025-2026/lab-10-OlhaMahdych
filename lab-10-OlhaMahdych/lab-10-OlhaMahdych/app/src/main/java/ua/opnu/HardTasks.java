@@ -1,15 +1,12 @@
 package ua.opnu;
 
-
 import ua.opnu.util.Customer;
 import ua.opnu.util.DataProvider;
 import ua.opnu.util.Order;
 import ua.opnu.util.Product;
 
-
 import java.util.*;
 import java.util.stream.Collectors;
-
 
 /**
  * Клас зі складними завданнями (HardTasks).
@@ -18,31 +15,24 @@ import java.util.stream.Collectors;
  */
 public class HardTasks {
 
-
     // Підключаємо дані з DataProvider (статичні списки)
     private final List<Customer> customers = DataProvider.customers;
     private final List<Order> orders = DataProvider.orders;
     private final List<Product> products = DataProvider.products;
 
-
     public static void main(String[] args) {
         HardTasks tasks = new HardTasks();
 
-
         // Щоб побачити результат у консолі, розкоментуйте потрібний виклик нижче:
-
 
         // Завдання 1 — товари категорії "Books" з ціною понад 100
         Objects.requireNonNull(tasks.getBooksWithPrice(), "Method getBooksWithPrice() returns null").forEach(System.out::println);
 
-
         // Завдання 2 — замовлення, які містять товари категорії "Baby"
         Objects.requireNonNull(tasks.getOrdersWithBabyProducts(), "Method getOrdersWithBabyProducts() returns null").forEach(System.out::println);
 
-
         // Інші виклики можна розкоментувати для ручної перевірки
     }
-
 
     /**
      * Завдання 1.
@@ -57,7 +47,6 @@ public class HardTasks {
                 .filter(p -> p.getPrice() > 100)
                 .collect(Collectors.toList());
     }
-
 
     /**
      * Завдання 2.
@@ -74,7 +63,6 @@ public class HardTasks {
                 .collect(Collectors.toList());
     }
 
-
     /**
      * Завдання 3.
      * Знайти товари категорії "Toys", застосувати до їх ціни знижку 50% (поділити на 2),
@@ -90,16 +78,13 @@ public class HardTasks {
                 .filter(p -> "Toys".equals(p.getCategory()))
                 .collect(Collectors.toList());
 
-
         toys.forEach(p -> {
             double newPrice = p.getPrice() / 2.0;
             p.setPrice(newPrice);
         });
 
-
         return toys;
     }
-
 
     /**
      * Завдання 4.
@@ -112,7 +97,6 @@ public class HardTasks {
                 .filter(p -> "Books".equals(p.getCategory()))
                 .min(Comparator.comparingDouble(Product::getPrice));
     }
-
 
     /**
      * Завдання 5.
@@ -128,7 +112,6 @@ public class HardTasks {
                 .collect(Collectors.toList());
     }
 
-
     /**
      * Завдання 6.
      * Повертає статистику (DoubleSummaryStatistics) за ціною товарів категорії "Books".
@@ -141,7 +124,6 @@ public class HardTasks {
                 .mapToDouble(Product::getPrice)
                 .summaryStatistics();
     }
-
 
     /**
      * Завдання 7.
@@ -159,7 +141,6 @@ public class HardTasks {
                 ));
     }
 
-
     /**
      * Завдання 8.
      * Повернути товари, згруповані за категорією. Кожне значення — список id товарів
@@ -176,9 +157,7 @@ public class HardTasks {
                 ));
     }
 
-
     public List<Customer> getCustomers() {
         return customers;
     }
 }
-

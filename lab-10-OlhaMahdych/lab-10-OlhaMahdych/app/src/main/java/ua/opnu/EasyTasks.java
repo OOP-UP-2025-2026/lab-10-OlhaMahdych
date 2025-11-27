@@ -1,10 +1,8 @@
 package ua.opnu;
 
-
 import java.util.List;
 import java.util.Arrays;
 import java.util.stream.Collectors;
-
 
 /**
  * Клас з простими завданнями (EasyTasks).
@@ -12,11 +10,9 @@ import java.util.stream.Collectors;
  */
 public class EasyTasks {
 
-
     public static void main(String[] args) {
         // Тут можна вручну запускати методи для локального тестування
     }
-
 
     /**
      * Завдання 1.
@@ -33,7 +29,6 @@ public class EasyTasks {
                 .collect(Collectors.toList());
     }
 
-
     /**
      * Завдання 2.
      * Піднести кожне число до квадрата.
@@ -47,7 +42,6 @@ public class EasyTasks {
                 .map(n -> n * n)
                 .collect(Collectors.toList());
     }
-
 
     /**
      * Завдання 3.
@@ -63,7 +57,6 @@ public class EasyTasks {
                 .collect(Collectors.toList());
     }
 
-
     /**
      * Завдання 4.
      * Повертає список без від'ємних чисел (фільтр: залишаємо числа >= 0).
@@ -77,7 +70,6 @@ public class EasyTasks {
                 .filter(n -> n >= 0)
                 .collect(Collectors.toList());
     }
-
 
     /**
      * Завдання 5.
@@ -94,7 +86,6 @@ public class EasyTasks {
                 .collect(Collectors.toList());
     }
 
-
     /**
      * Завдання 6.
      * Повернути список рядків, у яких немає літери 'z'.
@@ -109,7 +100,6 @@ public class EasyTasks {
                 .filter(s -> !s.contains("z"))
                 .collect(Collectors.toList());
     }
-
 
     /**
      * Завдання 7.
@@ -128,7 +118,6 @@ public class EasyTasks {
                 .collect(Collectors.toList());
     }
 
-
     /**
      * Завдання 8.
      * Розбити кожен рядок за пробілом і "сплюснути" результати в один список.
@@ -144,4 +133,3 @@ public class EasyTasks {
                 .collect(Collectors.toList());
     }
 }
-
